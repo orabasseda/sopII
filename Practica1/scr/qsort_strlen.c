@@ -6,12 +6,20 @@ static int const line_size = 100;
 
 int compara(const void *p1, const void *p2)
 {
-    char **str1, **str2;
+    char *str1, *str2;
+    int size1, size2;
     
-    str1 = (char **)p1;
-    str2 = (char **)p2;
+    str1 = *((char **)p1);
+    str2 = *((char **)p2);
+
+    size1 = strlen(str1);
+    size2 = strlen(str2);
     
-    return strcmp(*str1, *str2);
+    if (size1 < size2)
+        return -1;
+    if (size1 > size2)
+        return 1;
+    return 0;
 }
 
 int main(void)
@@ -39,9 +47,10 @@ int main(void)
 
     while (fgets(element, line_size, fp) != NULL && i < line_num)
     {
-        len = strlen(element)-1;
+        len = strlen(element);
+        element[len-1] = '\0';
         vector[i] = (char *)malloc(len*sizeof(char));
-        memcpy(vector[i], element, len*sizeof(char));
+        strcpy(vector[i], element);
         i++;
     }
     
