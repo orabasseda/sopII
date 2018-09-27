@@ -7,7 +7,7 @@
  *
  */
 
-#define RBTREE_KEY_TYPE int 
+#define RBTREE_KEY_TYPE char *
 
 /**
  *
