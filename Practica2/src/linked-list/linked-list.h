@@ -20,7 +20,7 @@
  *
  */
 
-#define LIST_KEY_TYPE int
+#define LIST_KEY_TYPE char *
 
 /**
  *
@@ -38,7 +38,8 @@ typedef struct list_data_ {
   // This is the additional information that will be stored
   // within the structure. This additional information is associated
   // to the key. You may include any field you may need useful.
-  int num_times;
+  int delay;
+  int n_flights;
 } list_data;
 
 

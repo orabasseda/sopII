@@ -15,7 +15,7 @@ LFLAGS = -lm
 # There is no need to change the instructions below this
 # line. Change if you really know what you are doing.
 
-FILES_O = $(subst .c,.o,$(FILES_C))
+FILES_O = main.c red-black-tree.o linked-list.o
 
 $(TARGET): $(FILES_O) Makefile
 	gcc $(FILES_O) -o $(TARGET) $(LFLAGS) 

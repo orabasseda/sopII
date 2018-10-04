@@ -8,6 +8,7 @@
  */
 
 #define RBTREE_KEY_TYPE char *
+#include "../linked-list/linked-list.h"
 
 /**
  *
@@ -28,7 +29,7 @@ typedef struct node_data_
     // This is the additional information that will be stored
     // within the structure. You may adapt it to your needs:
     // add or remove fields as you need.
-    int num_vegades;   
+    list *flights;  
 } node_data; 
 
 /**
