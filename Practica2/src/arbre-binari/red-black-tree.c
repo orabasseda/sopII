@@ -29,7 +29,7 @@
 /**
  *
  * Free data element. The user should adapt this function to their needs.  This
- * function is called internally by deletenode and is used to free the
+ * function is called internally by delet enode and is used to free the
  * dynamic memory that is stored inside node_data. The memory is allocated
  * by the user code, just before the node is inserted in the tree. 
  *
@@ -38,6 +38,7 @@
 static void free_node_data(node_data *data)
 {
     delete_list(data->flights);
+    free(data->flights);
     free(data->key);
     free(data);
 }

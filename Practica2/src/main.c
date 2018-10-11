@@ -15,8 +15,9 @@ char *split (char *str, int pos, int *size) {
     int max = strlen(str);
     int counter = 0;
     int start;
+    int i;
     
-    for (int i = 0; i < max; i++) {
+    for (i = 0; i < max; i++) {
         
         if (str[i] == ',' || str[i] == '\n') {
             counter++;
@@ -75,12 +76,12 @@ rb_tree *airport_tree(char *filename) {
             n_data = (node_data *)malloc(sizeof(node_data));
             
             /* This is the key by which the node is indexed in the tree */
-            n_data->key = (char *)malloc(IATA_CODE*sizeof(char));
+            n_data->key = (char *)malloc((IATA_CODE+1)*sizeof(char));
             strcpy(n_data->key, str);
             
             /* This is additional information that is stored in the tree */
             /* Initialize the list */
-            n_data->flights = (list *) malloc(sizeof(list));
+            n_data->flights = (list *)malloc(sizeof(list));
             init_list(n_data->flights);
 
             /* We insert the node in the tree */
@@ -147,6 +148,7 @@ void flight_list(rb_tree *tree, char *filename) {
                     /* We increment the number of times current item has appeared */
                     l_data->n_flights++;
                     l_data->delay += atoi(delay);
+		    free(destination);
                 }
                 else {
                     /* If the key is not in the list, allocate memory for the data and
@@ -161,6 +163,8 @@ void flight_list(rb_tree *tree, char *filename) {
                 }
                     
             }
+            free(origin);
+	    free(delay);
         }
     }
     fclose(fp);
