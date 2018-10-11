@@ -29,7 +29,8 @@
 
 static void free_list_data(list_data *data)
 {
-  free(data); 
+    free(data->key);
+    free(data); 
 }
 
 /**

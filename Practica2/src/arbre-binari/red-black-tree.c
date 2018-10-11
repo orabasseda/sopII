@@ -37,6 +37,8 @@
 
 static void free_node_data(node_data *data)
 {
+    delete_list(data->flights);
+    free(data->key);
     free(data);
 }
 
