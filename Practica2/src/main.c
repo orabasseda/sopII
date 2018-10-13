@@ -11,28 +11,38 @@ static int const IATA_CODE = 3;
 int max_dest = 0;
 char *airport;
 
+/* Method that splits a line of the 'dades' table and returns the info in the specified column
+ * @param *str char pointer to the designated line
+ * @param pos number of the column we want to obtain
+ * @param *size size of the info in the column
+ * @return &str string with the selected column of the current line
+ */
 char *split (char *str, int pos, int *size) {
-    int max = strlen(str);
-    int counter = 0;
+    int max = strlen(str); /* Max lenght of the line */
+    int counter = 0; /* Counter to keep track of the number of periods */
     int start;
     int i;
     
-    for (i = 0; i < max; i++) {
+    for (i = 0; i < max; i++) { /* We travel the line one char at a time */
         
-        if (str[i] == ',' || str[i] == '\n') {
+        if (str[i] == ',' || str[i] == '\n') { /* If we find a period or reach the end of the line: increase counter */
             counter++;
-            if (counter == pos) {
+            if (counter == pos) { /* If we arrive to the desired column, save the starting position */
                 start = i;
             }
-            else if (counter == pos+1) {
-                *size = i-start;
-                return &str[start+1];
+            else if (counter == pos+1) { /* If we arrive to the next period after 'start': */
+                *size = i-start; /* Calculate size of string */
+                return &str[start+1]; /* Return the string by reference */
             }
         }
     }
     return 0;
 }
 
+/* Method that fills the tree with nodes from a given file
+ * @param *filename name of the file with the nodes
+ * @return tree
+ */
 rb_tree *airport_tree(char *filename) {
     FILE *fp;
     char str[MAX_LINE_SIZE];
@@ -43,7 +53,7 @@ rb_tree *airport_tree(char *filename) {
     
     /* Opening file for reading */
     fp = fopen(filename, "r");
-    if (fp == NULL)
+    if (fp == NULL) /* If there's no file, print an error */
     {
         perror("Error opening file");
         return 0;
@@ -94,6 +104,10 @@ rb_tree *airport_tree(char *filename) {
     return tree;
 }
 
+/* Method that fills the linked list of the tree nodes with the flights from a file
+ * @param *tree pointer to the tree
+ * @param *filename name of the file with the information about flights
+ */
 void flight_list(rb_tree *tree, char *filename) {
     FILE *fp;
     char str[FLIGHT_LINE_SIZE];
@@ -109,7 +123,7 @@ void flight_list(rb_tree *tree, char *filename) {
     
     /* Opening file for reading */
     fp = fopen(filename, "r");
-    if (fp == NULL) {
+    if (fp == NULL) { /* If there's no file, print an error */
         perror("Error opening file");
     }
     
@@ -148,7 +162,7 @@ void flight_list(rb_tree *tree, char *filename) {
                     /* We increment the number of times current item has appeared */
                     l_data->n_flights++;
                     l_data->delay += atoi(delay);
-		    free(destination);
+		            free(destination);
                 }
                 else {
                     /* If the key is not in the list, allocate memory for the data and
@@ -170,6 +184,9 @@ void flight_list(rb_tree *tree, char *filename) {
     fclose(fp);
 }
 
+/* Recursive method that explores all tree nodes and finds the node with more destinations
+ * @param *x node
+ */
 void postorder(node *x) {
     int center = x->data->flights->num_items;
     
@@ -179,6 +196,7 @@ void postorder(node *x) {
     if (x->left != NIL)
         postorder(x->left);
 
+    /* If our current node has more destinations than max_dest, save current node */
     if (center > max_dest) {
         max_dest = center;
         airport = x->data->key;
@@ -187,21 +205,21 @@ void postorder(node *x) {
 
 int main(int argc, char **argv)
 {
-    rb_tree *tree = airport_tree(argv[2]);
-    flight_list(tree, argv[1]);
+    rb_tree *tree = airport_tree(argv[2]); /* Tree of the different airports */
+    flight_list(tree, argv[1]); /* List with the info about different flights */
     
-    node_data *n_data = find_node(tree, argv[3]);
+    node_data *n_data = find_node(tree, argv[3]); /* Find given node in tree */
     
-    if (n_data != NULL) {
+    if (n_data != NULL) { /* If the node exists, get the node's flight list */
         list_data *l_data;
         float avg_delay;
         list_item *l_item = n_data->flights->first;
         
-        if (l_item == NULL) {
+        if (l_item == NULL) { /* If there's no list, print message */
             printf("There are no flights from this airport\n");
         }
         else {
-            while (l_item != NULL) {
+            while (l_item != NULL) { /* Print list of the current node */
                 l_data = l_item->data;
                 avg_delay = (float)l_data->delay/l_data->n_flights;
                 printf("Destination: %s\tAverage delay: %f\n", l_data->key, avg_delay);
@@ -213,9 +231,11 @@ int main(int argc, char **argv)
         perror("Origin not valid\n");
     }
     
+    /* Find and print the airport with more destinations */
     postorder(tree->root);
     printf("Airport: %s\tDestinations: %d\n", airport, max_dest);
     
+    /* Delete tree */
     delete_tree(tree);
     free(tree);
     
