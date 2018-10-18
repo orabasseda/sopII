@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "data-base/database.h"
+
 #define MAXLINE      200
 #define MAGIC_NUMBER 0x0133C8F9
 
@@ -47,6 +49,7 @@ int main(int argc, char **argv)
 {
     char str1[MAXLINE], str2[MAXLINE];
     int opcio;
+    rb_tree *tree = NULL;
 
     if (argc != 1)
         printf("Opcions de la linia de comandes ignorades\n");
@@ -66,8 +69,11 @@ int main(int argc, char **argv)
                 printf("Introdueix fitxer de dades: ");
                 fgets(str2, MAXLINE, stdin);
                 str2[strlen(str2)-1]=0;
-
-                /* Falta codi */
+                
+                if (tree != NULL) {
+                    delete_database(tree);
+                }
+                tree = build_database(str1, str2);
 
                 break;
 
@@ -93,8 +99,16 @@ int main(int argc, char **argv)
                 printf("Introdueix aeroport per cercar retard o polsa enter per saber l'aeroport amb mes destins: ");
                 fgets(str1, MAXLINE, stdin);
                 str1[strlen(str1)-1]=0;
+                
+                if (strlen(str1) == 0) {
+                    int number;
+                    char *airport = max_destinations(tree, &number);
+                    printf("Airport: %s\tDestinations: %d\n", airport, number);
+                }
+                else {
+                    
 
-                /* Falta codi */
+                    
 
                 break;
 

@@ -3,23 +3,20 @@
 # Files to compile
 FILES_C = database.c
 
+TARGET = database.o
+
 # Compilation options
 CFLAGS = -Wall -Werror -g
 
-# There is no need to change the instructions below this
-# line. Change if you really know what you are doing.
-
-FILES_O = $(subst .c,.o,$(FILES_C))
-
-%.o: %.c Makefile
+$(TARGET): $(FILES_C)
+	$(MAKE) -C arbre-binari
+	$(MAKE) -C linked-list
 	gcc $(CFLAGS) -c $<
 
 all:
-	$(FILES_O)
-	@$(MAKE) -C arbre-binari
-	@$(MAKE) -C linked-list
+	$(TARGET)
 
 clean:
-	/bin/rm $(FILES_O)
-	@$(MAKE) -C arbre-binari clean
-	@$(MAKE) -C linked-list clean
+	/bin/rm $(TARGET)
+	$(MAKE) -C arbre-binari clean
+	$(MAKE) -C linked-list clean

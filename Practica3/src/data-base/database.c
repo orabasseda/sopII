@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "arbre-binari/red-black-tree.h"
 #include "linked-list/linked-list.h"
+#include "database.h"
 
 static int const MAX_LINE_SIZE = 100;
 static int const FLIGHT_LINE_SIZE = 500;
@@ -11,11 +11,12 @@ static int const IATA_CODE = 3;
 int max_dest = 0;
 char *airport;
 
-void delete_database(rb_tree *tree)
-{
+
+void delete_database(rb_tree *tree) {
     /* Delete tree */
     delete_tree(tree);
     free(tree);
+    tree = NULL;
 }
 
 /* Method that splits a line of the 'dades' table and returns the info in the specified column
@@ -75,11 +76,7 @@ rb_tree *airport_tree(char *filename) {
     /* Allocate memory for tree */
     tree = (rb_tree *)malloc(sizeof(rb_tree));
     
-    /* Initialize the tree */lete_list(data->flights);
-    free(data->flights);
-    free(data->key);
-    free(data);
-}
+    /* Initialize the tree */
     init_tree(tree);
 
     /* We fill the matrix with the lines from the file */
@@ -172,7 +169,12 @@ void flight_list(rb_tree *tree, char *filename) {
 
                     /* We increment the number of times current item has appeared */
                     l_data->n_flights++;
-                    l_data->delay += atoi(delay);
+                    if (strcmp(delay, "NA")) {
+                        l_data->delay += 0;
+                    }
+                    else {
+                        l_data->delay += atoi(delay);
+                    }
 		            free(destination);
                 }
                 else {
@@ -195,6 +197,25 @@ void flight_list(rb_tree *tree, char *filename) {
     fclose(fp);
 }
 
+/* Recursive method that explores all tree nodes and finds the node with more destinations
+ * @param *x node
+ */
+void postorder(node *x) {
+    int center = x->data->flights->num_items;
+    
+    if (x->right != NIL)
+        postorder(x->right);
+
+    if (x->left != NIL)
+        postorder(x->left);
+
+    /* If our current node has more destinations than max_dest, save current node */
+    if (center > max_dest) {
+        max_dest = center;
+        airport = x->data->key;
+    }
+}
+
 
 rb_tree *build_database(char *filename1, char *filename2){
     rb_tree *tree = airport_tree(filename1); /* Tree of the different airports */
@@ -202,3 +223,39 @@ rb_tree *build_database(char *filename1, char *filename2){
     
     return tree;
 }
+
+
+char *max_destinations(rb_tree *tree, int *number) {
+    /* Find and print the airport with more destinations */
+    postorder(tree->root);
+    *number = max_dest;
+    return airport;
+}
+
+char **delay(rb_tree *tree, char *origin) {
+    node_data *n_data = find_node(tree, origin); /* Find given node in tree */
+    
+    if (n_data != NULL) { /* If the node exists, get the node's flight list */
+        list_data *l_data;
+        float avg_delay;
+        list_item *l_item = n_data->flights->first;
+        
+        if (l_item == NULL) { /* If there's no list, print message */
+            printf("There are no flights from this airport\n");
+            return 0;
+        }
+        else {
+            char **airports = (char **)malloc(sizeof(char *)*n_data->flights->num_items);
+            char *element;
+            while (l_item != NULL) { /* Print list of the current node */
+                l_data = l_item->data;
+                avg_delay = (float)l_data->delay/l_data->n_flights;
+                element = printf("Destination: %s\tAverage delay: %f\n", l_data->key, avg_delay);
+                l_item = l_item->next;
+            }
+        }
+    }
+    else {
+        perror("Origin not valid\n");
+        return 0;
+    }
