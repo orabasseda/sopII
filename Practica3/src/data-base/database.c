@@ -225,6 +225,52 @@ rb_tree *build_database(char *filename1, char *filename2){
     return tree;
 }
 
+rb_tree *create_database() {
+    /* Allocate memory for tree */
+    rb_tree *tree = (rb_tree *)malloc(sizeof(rb_tree));
+    
+    /* Initialize the tree */
+    init_tree(tree);
+    return tree;
+}
+
+void insert_entry(rb_tree *tree, char *origin, char *destination, int num_vols, int delay) {
+    node_data *n_data = find_node(tree, origin);
+    list_data *l_data;
+        
+    if (n_data == NULL) {
+        /* If the key is not in the tree, allocate memory for the data
+        * and insert in the tree */
+        n_data = (node_data *)malloc(sizeof(node_data));
+        
+        /* This is the key by which the node is indexed in the tree */
+        n_data->key = origin;
+        
+        /* This is additional information that is stored in the tree */
+        /* Initialize the list */
+        n_data->flights = (list *)malloc(sizeof(list));
+        init_list(n_data->flights);
+        
+        
+        l_data = malloc(sizeof(list_data));
+        l_data->key = destination;
+        l_data->n_flights = num_vols;
+        l_data->delay = delay;
+
+        insert_list(n_data->flights, l_data);
+
+        /* We insert the node in the tree */
+        insert_node(tree, n_data);
+    }
+    else {
+        l_data = malloc(sizeof(list_data));
+        l_data->key = destination;
+        l_data->n_flights = num_vols;
+        l_data->delay = delay;
+
+        insert_list(n_data->flights, l_data);
+    }
+}
 
 void max_destinations(rb_tree *tree) {
     /* Find and print the airport with more destinations */

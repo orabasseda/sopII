@@ -14,6 +14,34 @@
 #define MAXLINE      200
 #define MAGIC_NUMBER 0x0133C8F9
 
+static int const IATA_CODE = 3;
+
+/* Recursive method that explores all tree nodes and finds the node with more destinations
+ * @param *x node
+ */
+void postorder_store(node *x, FILE *fp) {    
+    if (x->right != NIL)
+        postorder_store(x->right, fp);
+
+    if (x->left != NIL)
+        postorder_store(x->left, fp);
+
+    node_data *n_data = x->data;
+    list_data *l_data;
+    list_item *l_item = n_data->flights->first;
+                
+    fwrite(n_data->key, sizeof(char), strlen(n_data->key), fp);
+    fwrite(&n_data->flights->num_items, sizeof(int), 1, fp);
+    
+    while (l_item != NULL) {
+        l_data = l_item->data;
+        fwrite(l_data->key, sizeof(char), strlen(l_data->key), fp);
+        fwrite(&l_data->n_flights, sizeof(int), 1, fp);
+        fwrite(&l_data->delay, sizeof(int), 1, fp);
+        l_item = l_item->next;
+    }
+}
+
 /**
  * 
  *  Menu
@@ -82,9 +110,24 @@ int main(int argc, char **argv)
                 fgets(str1, MAXLINE, stdin);
                 str1[strlen(str1)-1]=0;
 
-                /* Falta codi */
-                
+                if (tree != NULL) {
+                    /* Falta codi */
+                    FILE *fp = fopen(str1, "w");
+                    
+                    if (fp == NULL) /* If there's no file, print an error */
+                    {
+                        perror("Error opening file");
+                        break;
+                    }
 
+                    int magic = MAGIC_NUMBER;
+                    fwrite(&magic, sizeof(int), 1, fp); 
+                    fwrite(&tree->num_nodes, sizeof(int), 1, fp);
+                    postorder_store(tree->root, fp);
+                }
+                else {
+                    perror("L'arbre no està inicialitzat");
+                }
                 break;
 
             case 3:
@@ -93,6 +136,48 @@ int main(int argc, char **argv)
                 str1[strlen(str1)-1]=0;
 
                 /* Falta codi */
+                if (tree != NULL) {
+                    delete_database(tree);
+                }
+                
+                FILE *fp = fopen(str1, "r");
+                int magic_aux;
+                fread(&magic_aux, sizeof(int), 1, fp);
+                int magic = MAGIC_NUMBER;
+                
+                if (magic_aux == magic) {
+                    int num_nodes;
+                    int i;
+                    char *origin;
+                    int num_dest;
+                    int j;
+                    char *dest;
+                    int num_vols;
+                    int delay;
+                    
+                    fread(&num_nodes, sizeof(int), 1, fp);
+                    
+                    tree = create_database();
+                    for (i = 0; i < num_nodes; i++) {
+                        origin = (char *)malloc(sizeof(char)*(IATA_CODE+1));
+                        fread(origin, sizeof(char), IATA_CODE, fp);
+                        origin[IATA_CODE] = '\0';
+                        
+                        fread(&num_dest, sizeof(int), 1, fp);
+                        for (j = 0; j < num_dest; j++) {
+                            dest = (char *)malloc(sizeof(char)*(IATA_CODE+1));
+                            fread(dest, sizeof(char), IATA_CODE, fp);
+                            dest[IATA_CODE] = '\0';
+                            fread(&num_vols, sizeof(int), 1, fp);
+                            fread(&delay, sizeof(int), 1, fp);
+                            insert_entry(tree, origin, dest, num_vols, delay);
+                        }
+                    }
+                }
+                else {
+                    perror("El fitxer donat no és vàlid");
+                }
+                fclose(fp);
 
                 break;
 
@@ -117,6 +202,9 @@ int main(int argc, char **argv)
             case 5:
 
                 /* Falta codi */
+                if (tree != NULL) {
+                    delete_database(tree);
+                }
 
                 break;
 

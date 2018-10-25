@@ -32,5 +32,5 @@ all:
 	$(TARGET)
 
 clean:
-	/bin/rm $(TARGET) $(EXTRA_O)
 	$(MAKE) -C data-base clean
+	/bin/rm $(TARGET) $(EXTRA_O)
