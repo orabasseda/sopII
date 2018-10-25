@@ -72,6 +72,7 @@ extern node sentinel;  /* declared in file red-black-tree.c */
 
 typedef struct rb_tree_ {
     node *root;                   /* root of Red-Black tree */
+    int num_nodes;
 } rb_tree;
 
 /*

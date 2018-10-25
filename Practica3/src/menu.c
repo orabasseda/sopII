@@ -83,6 +83,7 @@ int main(int argc, char **argv)
                 str1[strlen(str1)-1]=0;
 
                 /* Falta codi */
+                
 
                 break;
 
@@ -96,20 +97,21 @@ int main(int argc, char **argv)
                 break;
 
             case 4:
-                printf("Introdueix aeroport per cercar retard o polsa enter per saber l'aeroport amb mes destins: ");
-                fgets(str1, MAXLINE, stdin);
-                str1[strlen(str1)-1]=0;
-                
-                if (strlen(str1) == 0) {
-                    int number;
-                    char *airport = max_destinations(tree, &number);
-                    printf("Airport: %s\tDestinations: %d\n", airport, number);
+                if (tree != NULL) {
+                    printf("Introdueix aeroport per cercar retard o polsa enter per saber l'aeroport amb mes destins: ");
+                    fgets(str1, MAXLINE, stdin);
+                    str1[strlen(str1)-1]=0;
+                    
+                    if (strlen(str1) == 0) {
+                        max_destinations(tree);
+                    }
+                    else {
+                        delay(tree, str1);
+                    }
                 }
                 else {
-                    
-
-                    
-
+                    perror("L'arbre no està inicialitzat");
+                }
                 break;
 
             case 5:

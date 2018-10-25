@@ -8,8 +8,8 @@
  * can be called from any other file.
  *
  */
-
 char *split (char *str, int pos, int *size);
 void delete_database(rb_tree *tree);
 rb_tree *build_database(char *filename1, char *filename2);
-char *max_destinations(rb_tree *tree, int *number);
+void max_destinations(rb_tree *tree);
+void delay(rb_tree *tree, char *origin);

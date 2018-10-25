@@ -101,6 +101,7 @@ node sentinel = { NIL, NIL, 0, BLACK, NULL};
 void init_tree(rb_tree *tree)
 {
     tree->root = NIL;
+    tree->num_nodes = 0;
 }
 
 /**
@@ -261,6 +262,7 @@ void insert_node(rb_tree *tree, node_data *data) {
        is assigned. This means that the pointer to the 
        data should not be overwritten after calling this
        function. */
+    tree->num_nodes++;
 
     x->data = data;
 

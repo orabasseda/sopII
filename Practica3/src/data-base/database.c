@@ -12,6 +12,7 @@ int max_dest = 0;
 char *airport;
 
 
+
 void delete_database(rb_tree *tree) {
     /* Delete tree */
     delete_tree(tree);
@@ -225,14 +226,13 @@ rb_tree *build_database(char *filename1, char *filename2){
 }
 
 
-char *max_destinations(rb_tree *tree, int *number) {
+void max_destinations(rb_tree *tree) {
     /* Find and print the airport with more destinations */
     postorder(tree->root);
-    *number = max_dest;
-    return airport;
+    printf("Airport: %s\tDestinations: %d\n", airport, max_dest);
 }
 
-char **delay(rb_tree *tree, char *origin) {
+void delay(rb_tree *tree, char *origin) {
     node_data *n_data = find_node(tree, origin); /* Find given node in tree */
     
     if (n_data != NULL) { /* If the node exists, get the node's flight list */
@@ -242,20 +242,17 @@ char **delay(rb_tree *tree, char *origin) {
         
         if (l_item == NULL) { /* If there's no list, print message */
             printf("There are no flights from this airport\n");
-            return 0;
         }
         else {
-            char **airports = (char **)malloc(sizeof(char *)*n_data->flights->num_items);
-            char *element;
             while (l_item != NULL) { /* Print list of the current node */
                 l_data = l_item->data;
                 avg_delay = (float)l_data->delay/l_data->n_flights;
-                element = printf("Destination: %s\tAverage delay: %f\n", l_data->key, avg_delay);
+                printf("Destination: %s\tAverage delay: %f\n", l_data->key, avg_delay);
                 l_item = l_item->next;
             }
         }
     }
     else {
         perror("Origin not valid\n");
-        return 0;
     }
+}

@@ -22,11 +22,11 @@ EXTRA_O = menu.o
 $(TARGET): $(FILES_O) $(EXTRA_O) Makefile
 	gcc $(FILES_O) $(EXTRA_O) -o $(TARGET) $(LFLAGS) 
 
-$(EXTRA_O): $(FILES_C) Makefile
-	gcc $(CFLAGS) -c $<
-
 $(FILES_O):
 	$(MAKE) -C data-base
+
+$(EXTRA_O): $(FILES_C) Makefile
+	gcc $(CFLAGS) -c $<
 
 all:
 	$(TARGET)
