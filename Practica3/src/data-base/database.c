@@ -11,8 +11,6 @@ static int const IATA_CODE = 3;
 int max_dest = 0;
 char *airport;
 
-
-
 void delete_database(rb_tree *tree) {
     /* Delete tree */
     delete_tree(tree);
@@ -135,67 +133,68 @@ void flight_list(rb_tree *tree, char *filename) {
     if (fp == NULL) { /* If there's no file, print an error */
         perror("Error opening file");
     }
-    
-    /* We skip the 1st line of the file */
-    if (fgets(str, FLIGHT_LINE_SIZE, fp) != NULL){
-        
-        /* We fill the matrix with the lines from the file */
-        while (fgets(str, FLIGHT_LINE_SIZE, fp) != NULL) {
-            
-            aux = split(&str[0], 14, &size);
-            delay = (char *)malloc(size*sizeof(char));
-            memcpy(delay, aux, size);
-            delay[size-1] = '\0';
-            
-            aux = split(&str[0], 16, &size);
-            origin = (char *)malloc(size*sizeof(char));
-            memcpy(origin, aux, size);
-            origin[size-1] = '\0';
-            
-            aux = split(&str[0], 17, &size);
-            destination = (char *)malloc(size*sizeof(char));
-            memcpy(destination, aux, size);
-            destination[size-1] = '\0';
-            
-            /* Search if the key is in the tree */
-            n_data = find_node(tree, origin);
-            
-            if (n_data != NULL) {
-                l = n_data->flights;
-                
-                /* Search if the key is in the tree */
-                l_data = find_list(l, destination);
-                
-                if (l_data != NULL) {
+    else {
+      /* We skip the 1st line of the file */
+      if (fgets(str, FLIGHT_LINE_SIZE, fp) != NULL){
+	  
+	  /* We fill the matrix with the lines from the file */
+	  while (fgets(str, FLIGHT_LINE_SIZE, fp) != NULL) {
+	      
+	      aux = split(&str[0], 14, &size);
+	      delay = (char *)malloc(size*sizeof(char));
+	      memcpy(delay, aux, size);
+	      delay[size-1] = '\0';
+	      
+	      aux = split(&str[0], 16, &size);
+	      origin = (char *)malloc(size*sizeof(char));
+	      memcpy(origin, aux, size);
+	      origin[size-1] = '\0';
+	      
+	      aux = split(&str[0], 17, &size);
+	      destination = (char *)malloc(size*sizeof(char));
+	      memcpy(destination, aux, size);
+	      destination[size-1] = '\0';
+	      
+	      /* Search if the key is in the tree */
+	      n_data = find_node(tree, origin);
+	      
+	      if (n_data != NULL) {
+		  l = n_data->flights;
+		  
+		  /* Search if the key is in the tree */
+		  l_data = find_list(l, destination);
+		  
+		  if (l_data != NULL) {
 
-                    /* We increment the number of times current item has appeared */
-                    l_data->n_flights++;
-                    if (strcmp(delay, "NA")) {
-                        l_data->delay += 0;
-                    }
-                    else {
-                        l_data->delay += atoi(delay);
-                    }
-		            free(destination);
-                }
-                else {
-                    /* If the key is not in the list, allocate memory for the data and
-                    * insert it in the list */
+		      /* We increment the number of times current item has appeared */
+		      l_data->n_flights++;
+		      if (strcmp(delay, "NA")) {
+			  l_data->delay += 0;
+		      }
+		      else {
+			  l_data->delay += atoi(delay);
+		      }
+			      free(destination);
+		  }
+		  else {
+		      /* If the key is not in the list, allocate memory for the data and
+		      * insert it in the list */
 
-                    l_data = malloc(sizeof(list_data));
-                    l_data->key = destination;
-                    l_data->n_flights = 1;
-                    l_data->delay = atoi(delay);
+		      l_data = malloc(sizeof(list_data));
+		      l_data->key = destination;
+		      l_data->n_flights = 1;
+		      l_data->delay = atoi(delay);
 
-                    insert_list(l, l_data);
-                }
-                    
-            }
-            free(origin);
-	    free(delay);
-        }
+		      insert_list(l, l_data);
+		  }
+		      
+	      }
+	      free(origin);
+	      free(delay);
+	  }
+      }
+      fclose(fp);
     }
-    fclose(fp);
 }
 
 /* Recursive method that explores all tree nodes and finds the node with more destinations
@@ -234,33 +233,36 @@ rb_tree *create_database() {
     return tree;
 }
 
-void insert_entry(rb_tree *tree, char *origin, char *destination, int num_vols, int delay) {
+void insert_node_tree(rb_tree *tree, char *origin) {
+    node_data *n_data = find_node(tree, origin);
+    if (n_data == NULL) {
+	/* If the key is not in the tree, allocate memory for the data
+	* and insert in the tree */
+	n_data = (node_data *)malloc(sizeof(node_data));
+	
+	/* This is the key by which the node is indexed in the tree */
+	n_data->key = origin;
+	
+	/* This is additional information that is stored in the tree */
+	/* Initialize the list */
+	n_data->flights = (list *)malloc(sizeof(list));
+	init_list(n_data->flights);
+
+	/* We insert the node in the tree */
+	insert_node(tree, n_data);
+    }
+    else {
+	perror("Origin already in tree");
+    }
+    
+}
+
+void insert_destination(rb_tree *tree, char *origin, char *destination, int num_vols, int delay) {
     node_data *n_data = find_node(tree, origin);
     list_data *l_data;
         
     if (n_data == NULL) {
-        /* If the key is not in the tree, allocate memory for the data
-        * and insert in the tree */
-        n_data = (node_data *)malloc(sizeof(node_data));
-        
-        /* This is the key by which the node is indexed in the tree */
-        n_data->key = origin;
-        
-        /* This is additional information that is stored in the tree */
-        /* Initialize the list */
-        n_data->flights = (list *)malloc(sizeof(list));
-        init_list(n_data->flights);
-        
-        
-        l_data = malloc(sizeof(list_data));
-        l_data->key = destination;
-        l_data->n_flights = num_vols;
-        l_data->delay = delay;
-
-        insert_list(n_data->flights, l_data);
-
-        /* We insert the node in the tree */
-        insert_node(tree, n_data);
+        perror("Origin not in tree");
     }
     else {
         l_data = malloc(sizeof(list_data));
@@ -276,6 +278,7 @@ void max_destinations(rb_tree *tree) {
     /* Find and print the airport with more destinations */
     postorder(tree->root);
     printf("Airport: %s\tDestinations: %d\n", airport, max_dest);
+    max_dest = 0;
 }
 
 void delay(rb_tree *tree, char *origin) {

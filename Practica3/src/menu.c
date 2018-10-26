@@ -106,11 +106,10 @@ int main(int argc, char **argv)
                 break;
 
             case 2:
-                printf("Introdueix el nom de fitxer en el qual es desara l'arbre: ");
-                fgets(str1, MAXLINE, stdin);
-                str1[strlen(str1)-1]=0;
-
-                if (tree != NULL) {
+               if (tree != NULL) {
+		    printf("Introdueix el nom de fitxer en el qual es desara l'arbre: ");
+		    fgets(str1, MAXLINE, stdin);
+		    str1[strlen(str1)-1]=0;
                     /* Falta codi */
                     FILE *fp = fopen(str1, "w");
                     
@@ -124,6 +123,7 @@ int main(int argc, char **argv)
                     fwrite(&magic, sizeof(int), 1, fp); 
                     fwrite(&tree->num_nodes, sizeof(int), 1, fp);
                     postorder_store(tree->root, fp);
+		    fclose(fp);
                 }
                 else {
                     perror("L'arbre no està inicialitzat");
@@ -141,7 +141,13 @@ int main(int argc, char **argv)
                 }
                 
                 FILE *fp = fopen(str1, "r");
-                int magic_aux;
+                if (fp == NULL) /* If there's no file, print an error */
+		{
+		    perror("Error opening file");
+		    break;
+		}
+		
+		int magic_aux;
                 fread(&magic_aux, sizeof(int), 1, fp);
                 int magic = MAGIC_NUMBER;
                 
@@ -162,6 +168,7 @@ int main(int argc, char **argv)
                         origin = (char *)malloc(sizeof(char)*(IATA_CODE+1));
                         fread(origin, sizeof(char), IATA_CODE, fp);
                         origin[IATA_CODE] = '\0';
+                        insert_node_tree(tree, origin);
                         
                         fread(&num_dest, sizeof(int), 1, fp);
                         for (j = 0; j < num_dest; j++) {
@@ -170,7 +177,7 @@ int main(int argc, char **argv)
                             dest[IATA_CODE] = '\0';
                             fread(&num_vols, sizeof(int), 1, fp);
                             fread(&delay, sizeof(int), 1, fp);
-                            insert_entry(tree, origin, dest, num_vols, delay);
+                            insert_destination(tree, origin, dest, num_vols, delay);
                         }
                     }
                 }
