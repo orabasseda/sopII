@@ -11,6 +11,9 @@ static int const IATA_CODE = 3;
 int max_dest = 0;
 char *airport;
 
+/* Method that deletes a given rb_tree
+ * @param *tree
+ */
 void delete_database(rb_tree *tree) {
     /* Delete tree */
     delete_tree(tree);
@@ -216,7 +219,11 @@ void postorder(node *x) {
     }
 }
 
-
+/* Method that creates a new rb_tree given 2 file locations
+ * This method build a tree, even though its called 'database' for some reason...
+ * @param *filename1 file of airports
+ * @aram *filename2 file of flights
+ */
 rb_tree *build_database(char *filename1, char *filename2){
     rb_tree *tree = airport_tree(filename1); /* Tree of the different airports */
     flight_list(tree, filename2); /* List with the info about different flights */
@@ -224,6 +231,8 @@ rb_tree *build_database(char *filename1, char *filename2){
     return tree;
 }
 
+/* Method that initializes a new rb_tree
+ */
 rb_tree *create_database() {
     /* Allocate memory for tree */
     rb_tree *tree = (rb_tree *)malloc(sizeof(rb_tree));
@@ -233,6 +242,10 @@ rb_tree *create_database() {
     return tree;
 }
 
+/* Method that inserts a new node in a tree
+ * @param *tree
+ * @param *origin node to insert
+ */
 void insert_node_tree(rb_tree *tree, char *origin) {
     node_data *n_data = find_node(tree, origin);
     if (n_data == NULL) {
@@ -257,23 +270,33 @@ void insert_node_tree(rb_tree *tree, char *origin) {
     
 }
 
+/* Method that inserts a flight into the tree
+ * @param *tree
+ * @param *origin 
+ * @param *destination
+ * @param num_vols number of flights
+ * @param delay
+ */
 void insert_destination(rb_tree *tree, char *origin, char *destination, int num_vols, int delay) {
-    node_data *n_data = find_node(tree, origin);
+    node_data *n_data = find_node(tree, origin); /* Find origin node in tree */
     list_data *l_data;
         
-    if (n_data == NULL) {
+    if (n_data == NULL) { /* If origin not in tree, print an error */
         perror("Origin not in tree");
     }
     else {
+        /* Create element to add to linked list */
         l_data = malloc(sizeof(list_data));
         l_data->key = destination;
         l_data->n_flights = num_vols;
         l_data->delay = delay;
 
-        insert_list(n_data->flights, l_data);
+        insert_list(n_data->flights, l_data); /* Insert flight in list */
     }
 }
 
+/* Method that returns the airport with more destinations in a tree 
+ */
 void max_destinations(rb_tree *tree) {
     /* Find and print the airport with more destinations */
     postorder(tree->root);
@@ -281,6 +304,8 @@ void max_destinations(rb_tree *tree) {
     max_dest = 0;
 }
 
+/* Method that calculates the average delay for a given airport
+ */
 void delay(rb_tree *tree, char *origin) {
     node_data *n_data = find_node(tree, origin); /* Find given node in tree */
     
@@ -301,7 +326,7 @@ void delay(rb_tree *tree, char *origin) {
             }
         }
     }
-    else {
+    else { /* If the node doesn't exist, print an error */
         perror("Origin not valid\n");
     }
 }
