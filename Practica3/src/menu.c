@@ -64,7 +64,7 @@ int menu()
     printf(" 5 - Sortir\n\n");
     printf("   Escull opcio: ");
 
-    fgets(str, 5, stdin);
+    fgets(str, 5, stdin); /* Read user input */
     opcio = atoi(str); 
 
     return opcio;
