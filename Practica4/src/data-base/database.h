@@ -2,6 +2,11 @@
 
 #include "arbre-binari/red-black-tree.h"
 
+typedef struct thread_data_ {
+    rb_tree *tree;
+    FILE *fp;
+} thread_data;
+
 /**
  *
  * Function heders we want to make visible so that they

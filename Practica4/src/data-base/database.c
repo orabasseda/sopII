@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "linked-list/linked-list.h"
 #include "database.h"
@@ -198,6 +199,13 @@ void postorder(node *x) {
     }
 }
 
+void *thread_ini(void *arg) {
+    thread_data *t_data = (thread_data *)arg;
+    flight_list(t_data->tree, t_data->fp); /* List with the info about different flights */
+    
+    return NULL;
+}
+
 /* Method that creates a new rb_tree given 2 file locations
  * This method build a tree, even though its called 'database' for some reason...
  * @param *filename1 file of airports
@@ -220,7 +228,17 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
 
     tree = airport_tree(fp1); /* Tree of the different airports */
     fclose(fp1);
-    flight_list(tree, fp2); /* List with the info about different flights */
+    
+    thread_data *t_data = (thread_data *)malloc(sizeof(thread_data));
+    t_data->fp = fp2;
+    t_data->tree = tree;
+    
+    pthread_t secondary;
+    pthread_create(&secondary, NULL, thread_ini, (void *)t_data);
+    
+    void *tret;
+    pthread_join(secondary, &tret);
+
     fclose(fp2);
     return tree;
 }
