@@ -206,10 +206,16 @@ void postorder(node *x) {
 rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
     /* Opening file for reading */
     FILE *fp1 = fopen(filename1, "r");
-    FILE *fp2 = fopen(filename2, "r");
-    if (fp1 == NULL || fp2 == NULL) /* If there's no file, print an error */
+    if (fp1 == NULL) /* If there's no file, print an error */
     {
         perror("Error opening file");
+        return 0;
+    } 
+    FILE *fp2 = fopen(filename2, "r");
+    if (fp2 == NULL) /* If there's no file, print an error */
+    {
+        perror("Error opening file");
+	fclose(fp1);
         return 0;
     }   
     
