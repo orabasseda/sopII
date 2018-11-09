@@ -201,7 +201,9 @@ void postorder(node *x) {
 /* Method that creates a new rb_tree given 2 file locations
  * This method build a tree, even though its called 'database' for some reason...
  * @param *filename1 file of airports
- * @aram *filename2 file of flights
+ * @param *filename2 file of flights
+ * @param rb_tree current tree
+ * @return rb_tree airport tree
  */
 rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
     /* Opening file for reading */

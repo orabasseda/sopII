@@ -14,3 +14,5 @@ Mode de funcionament:
 
 3/ Editeu el fitxer Makefile per indicar els fitxers
    que s'han de compilar.
+
+4/ Les dates per construir l’arbre es troben a la carpeta data
