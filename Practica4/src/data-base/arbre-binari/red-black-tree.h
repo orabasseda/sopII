@@ -9,6 +9,7 @@
 
 #define RBTREE_KEY_TYPE char *
 #include "../linked-list/linked-list.h"
+#include <pthread.h>
 
 /**
  *
@@ -29,7 +30,8 @@ typedef struct node_data_
     // This is the additional information that will be stored
     // within the structure. You may adapt it to your needs:
     // add or remove fields as you need.
-    list *flights;  
+    list *flights;
+    pthread_mutex_t mutex;
 } node_data; 
 
 /**
