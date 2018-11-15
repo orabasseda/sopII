@@ -6,9 +6,12 @@
 #include "linked-list/linked-list.h"
 #include "database.h"
 
-static int const MAX_LINE_SIZE = 100;
-static int const FLIGHT_LINE_SIZE = 500;
-static int const IATA_CODE = 3;
+#define BLOCK_SIZE 10000
+#define NUM_THREADS 8
+#define MAX_LINE_SIZE 100
+#define FLIGHT_LINE_SIZE 500
+#define IATA_CODE 3
+
 int max_dest = 0;
 char *airport;
 int eof = 0;
@@ -22,6 +25,7 @@ void delete_database(rb_tree *tree) {
     delete_tree(tree);
     free(tree);
     tree = NULL;
+    airport = NULL;
 }
 
 /* Method that splits a line of the 'dades' table and returns the info in the specified column
@@ -31,12 +35,11 @@ void delete_database(rb_tree *tree) {
  * @return &str string with the selected column of the current line
  */
 char *split (char *str, int pos, int *size) {
-    int max = strlen(str); /* Max lenght of the line */
     int counter = 0; /* Counter to keep track of the number of periods */
     int start;
-    int i;
+    int i = 0;
     
-    for (i = 0; i < max; i++) { /* We travel the line one char at a time */
+    while (str[i]) { /* We travel the line one char at a time */
         
         if (str[i] == ',' || str[i] == '\n') { /* If we find a period or reach the end of the line: increase counter */
             counter++;
@@ -48,6 +51,7 @@ char *split (char *str, int pos, int *size) {
                 return &str[start+1]; /* Return the string by reference */
             }
         }
+        i++;
     }
     return 0;
 }
@@ -197,27 +201,34 @@ void postorder(node *x) {
 
 void *thread_ini(void *arg) {
     thread_data *t_data = (thread_data *)arg;
-    char **block = (char **)malloc(sizeof(char *)*10000);
     char str[FLIGHT_LINE_SIZE];
-    char *element;
-    int i = 0;
+    int i;
+    
+    while(!eof) {
+        i = 0;
+        char **block = (char **)malloc(sizeof(char *)*BLOCK_SIZE);
+        
+        pthread_mutex_lock(&f_mutex);
+        while (fgets(str, FLIGHT_LINE_SIZE, t_data->fp) != NULL && i < BLOCK_SIZE) {
+            block[i] = (char *)malloc(sizeof(char)*strlen(str));
+            memcpy(block[i], str, strlen(str));
+            i++;
+        }
+        if (i < BLOCK_SIZE) {
+            eof = 1;
+        }
+        pthread_mutex_unlock(&f_mutex);
 
-    pthread_mutex_lock(&f_mutex);
-    while (fgets(str, FLIGHT_LINE_SIZE, t_data->fp) != NULL && i < 10000) {
-        element = (char *)malloc(sizeof(char)*strlen(str));
-        strcpy(element, str);
-        block[i] = element;
-        i++;
+        int j;
+        for (j = 0; j < i; j++) {
+            flight_list(t_data->tree, block[j]);
+        }
+
+        for (j = 0; j < i; j++) {
+            free(block[j]);
+        }
+        free(block);
     }
-    pthread_mutex_unlock(&f_mutex);
-
-    i = 0;
-    while (i < 10000 && block[i] != NULL) {
-        flight_list(t_data->tree, block[i]);
-        i++;
-    }
-
-    free(block);
     return NULL;
 }
 
@@ -243,7 +254,7 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
 
     tree = airport_tree(fp1); /* Tree of the different airports */
     fclose(fp1);
-    pthread_t ntid[100];
+    pthread_t ntid[NUM_THREADS];
     char str[FLIGHT_LINE_SIZE];
 
     if (fgets(str, FLIGHT_LINE_SIZE, fp2) == NULL) {
@@ -256,7 +267,7 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
     t_data->tree = tree;
     int i, err;
 
-    for (i = 0; i < 100; i++) {
+    for (i = 0; i < NUM_THREADS; i++) {
         err = pthread_create(&ntid[i], NULL, thread_ini, (void *)t_data);
         if (err != 0) {
             perror("Impossible to create thread");
@@ -264,13 +275,14 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
         }   
     }
     
-    for (i = 0; i < 100; i++) {
+    for (i = 0; i < NUM_THREADS; i++) {
         err = pthread_join(ntid[i], NULL);
         if (err != 0) {
             perror("Error in thread");
             exit(1);
         }
     }
+    eof = 0;
 
     fclose(fp2);
     free(t_data);
@@ -295,23 +307,23 @@ rb_tree *create_database() {
 void insert_node_tree(rb_tree *tree, char *origin) {
     node_data *n_data = find_node(tree, origin);
     if (n_data == NULL) {
-	/* If the key is not in the tree, allocate memory for the data
-	* and insert in the tree */
-	n_data = (node_data *)malloc(sizeof(node_data));
-	
-	/* This is the key by which the node is indexed in the tree */
-	n_data->key = origin;
-	
-	/* This is additional information that is stored in the tree */
-	/* Initialize the list */
-	n_data->flights = (list *)malloc(sizeof(list));
-	init_list(n_data->flights);
+        /* If the key is not in the tree, allocate memory for the data
+        * and insert in the tree */
+        n_data = (node_data *)malloc(sizeof(node_data));
+        
+        /* This is the key by which the node is indexed in the tree */
+        n_data->key = origin;
+        
+        /* This is additional information that is stored in the tree */
+        /* Initialize the list */
+        n_data->flights = (list *)malloc(sizeof(list));
+        init_list(n_data->flights);
 
-	/* We insert the node in the tree */
-	insert_node(tree, n_data);
+        /* We insert the node in the tree */
+        insert_node(tree, n_data);
     }
     else {
-	perror("Origin already in tree");
+        perror("Origin already in tree");
     }
     
 }

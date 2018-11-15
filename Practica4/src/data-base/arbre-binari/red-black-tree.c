@@ -40,6 +40,7 @@ static void free_node_data(node_data *data)
     delete_list(data->flights);
     free(data->flights);
     free(data->key);
+    pthread_mutex_destroy(&(data->mutex));
     free(data);
 }
 
