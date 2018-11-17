@@ -6,7 +6,7 @@
 #include "linked-list/linked-list.h"
 #include "database.h"
 
-#define BLOCK_SIZE 10000
+#define BLOCK_SIZE 10
 #define NUM_THREADS 8
 #define MAX_LINE_SIZE 100
 #define FLIGHT_LINE_SIZE 500
@@ -35,13 +35,14 @@ void delete_database(rb_tree *tree) {
  * @return &str string with the selected column of the current line
  */
 char *split (char *str, int pos, int *size) {
+    int max_size = strlen(str);
     int counter = 0; /* Counter to keep track of the number of periods */
     int start;
     int i = 0;
     
-    while (str[i]) { /* We travel the line one char at a time */
+    for(i = 0; i < max_size; i++) { /* We travel the line one char at a time */
         
-        if (str[i] == ',' || str[i] == '\n') { /* If we find a period or reach the end of the line: increase counter */
+        if (str[i] == ',' || str[i] == '\0') { /* If we find a period or reach the end of the line: increase counter */
             counter++;
             if (counter == pos) { /* If we arrive to the desired column, save the starting position */
                 start = i;
@@ -51,7 +52,6 @@ char *split (char *str, int pos, int *size) {
                 return &str[start+1]; /* Return the string by reference */
             }
         }
-        i++;
     }
     return 0;
 }
@@ -211,7 +211,8 @@ void *thread_ini(void *arg) {
         pthread_mutex_lock(&f_mutex);
         while (fgets(str, FLIGHT_LINE_SIZE, t_data->fp) != NULL && i < BLOCK_SIZE) {
             block[i] = (char *)malloc(sizeof(char)*strlen(str));
-            memcpy(block[i], str, strlen(str));
+            memcpy(block[i], str, strlen(str)-1);
+	    block[i][strlen(str)-1] = '\0';
             i++;
         }
         if (i < BLOCK_SIZE) {
