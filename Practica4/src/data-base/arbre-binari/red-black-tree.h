@@ -30,8 +30,8 @@ typedef struct node_data_
     // This is the additional information that will be stored
     // within the structure. You may adapt it to your needs:
     // add or remove fields as you need.
-    list *flights;
-    pthread_mutex_t mutex;
+    list *flights; /* List of flights for each node */
+    pthread_mutex_t mutex; /* Mutex for each node */
 } node_data; 
 
 /**
