@@ -201,7 +201,7 @@ void postorder(node *x) {
     }
 }
 
-/* Method that gets called when initializing a new thread
+/* Method that gets called when initializing a new thread, uses blocks of given size to read a file
  * @param *arg: struct thread_data
  */
 void *thread_ini(void *arg) {
@@ -267,8 +267,9 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
     pthread_t ntid[NUM_THREADS]; /* We create a list of threads to use */
     char str[FLIGHT_LINE_SIZE];
 
+    /* If file2 is empty, exit */
     if (fgets(str, FLIGHT_LINE_SIZE, fp2) == NULL) {
-        perror("This error I don't understand");
+        perror("Flights file is empty");
         return 0;
     }
     

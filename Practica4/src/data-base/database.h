@@ -2,6 +2,8 @@
 
 #include "arbre-binari/red-black-tree.h"
 
+/* Struct with the information needed for a thread
+ */
 typedef struct thread_data_ {
     rb_tree *tree;
     FILE *fp;
