@@ -201,7 +201,7 @@ void postorder(node *x) {
     }
 }
 
-/* Method that gets called when initializing a new thread, uses blocks of given size to read a file
+/* Method that gets called when initializing a new thread, uses blocks of given size to read a filename1
  * @param *arg: struct thread_data
  */
 void *thread_ini(void *arg) {
