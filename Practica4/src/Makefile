@@ -7,7 +7,7 @@ FILES_C = menu.c
 TARGET = menu
 
 # Compilation options
-CFLAGS = -Wall -Werror -g
+CFLAGS = -Wall -Werror -O
 
 # Linker options 
 LFLAGS = -lm -lpthread

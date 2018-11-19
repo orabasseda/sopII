@@ -6,7 +6,7 @@ FILES_C = database.c
 TARGET = database.o
 
 # Compilation options
-CFLAGS = -Wall -Werror -g
+CFLAGS = -Wall -Werror -O
 
 $(TARGET): $(FILES_C)
 	$(MAKE) -C arbre-binari

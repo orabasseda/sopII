@@ -4,7 +4,7 @@
 FILES_C = red-black-tree.c
 
 # Compilation options
-CFLAGS = -Wall -Werror -g
+CFLAGS = -Wall -Werror -O
 
 # There is no need to change the instructions below this
 # line. Change if you really know what you are doing.
