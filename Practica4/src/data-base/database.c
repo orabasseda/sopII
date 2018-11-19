@@ -37,7 +37,7 @@ void delete_database(rb_tree *tree) {
 char *split (char *str, int pos, int *size) {
     int max_size = strlen(str);
     int counter = 0; /* Counter to keep track of the number of periods */
-    int start;
+    int start = 0;
     int i = 0;
     
     for(i = 0; i < max_size; i++) { /* We travel the line one char at a time */
