@@ -5,9 +5,21 @@
 
 /* Struct with the information needed for a thread
  */
+typedef struct cell_ {
+    char **block;
+    int *size;
+} cell;
+
+typedef struct buffer_ {
+    cell **buffer;
+    int *num_cells; //numero de cells amb read = 1
+    int *r;
+    int *w;
+    int *eof;
+} buffer;
+
 typedef struct producer_data_ {
     FILE *fp;
-    int *eof;
     buffer *buffer;
 } producer_data;
 
@@ -15,18 +27,6 @@ typedef struct consumer_data_ {
     rb_tree *tree;
     buffer *buffer;
 } consumer_data;
-
-typedef struct cell_ {
-    char **block;
-    int read = 0;
-} cell;
-
-typedef struct buffer_ {
-    cell *buffer[NUM_CELLS];
-    int num_cells = 0;
-    int r = 0;
-    int w = 0;
-} buffer;
 
 /**
  *

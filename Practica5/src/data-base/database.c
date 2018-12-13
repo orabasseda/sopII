@@ -210,46 +210,50 @@ void *producer_ini(void *arg) {
     producer_data *p_data = (producer_data *)arg; /* Struct with the information needed for the thread to read the file */
     char str[FLIGHT_LINE_SIZE];
     int i, err;
-    char **block;
+    cell *cell;
+    buffer *buffer = p_data->buffer;
     
     
     /* If file2 is empty, exit */
-    if (fgets(str, FLIGHT_LINE_SIZE, fp2) == NULL) {
+    if (fgets(str, FLIGHT_LINE_SIZE, p_data->fp) == NULL) {
         perror("Flights file is empty");
         return 0;
     }
     
     /* While there's still lines to read, continue */
-    while(!p_data->eof) {
+    while(!(*buffer->eof)) {
         i = 0;
-        block = (char **)malloc(sizeof(char *)*BLOCK_SIZE); /* We allocate space for a block of a given size */
+        cell = malloc(sizeof(cell));
+        cell->block = (char **)malloc(sizeof(char *)*BLOCK_SIZE); /* We allocate space for a block of a given size */
         
         /* We lock the section for reading lines from the main file */
         pthread_mutex_lock(&f_mutex);
         /* We keep reading lines from the given file until reaching the block size limit or the end of file */
-        while (fgets(str, FLIGHT_LINE_SIZE, t_data->fp) != NULL && i < BLOCK_SIZE) { 
-            block[i] = (char *)malloc(sizeof(char)*strlen(str)); /* For each block line we allocate memory for the current line */
-            memcpy(block[i], str, strlen(str)-1); /* We copy the current line to the block */
-	        block[i][strlen(str)-1] = '\0';
+        while (fgets(str, FLIGHT_LINE_SIZE, p_data->fp) != NULL && i < BLOCK_SIZE) { 
+            cell->block[i] = (char *)malloc(sizeof(char)*strlen(str)); /* For each block line we allocate memory for the current line */
+            memcpy(cell->block[i], str, strlen(str)-1); /* We copy the current line to the block */
+	        cell->block[i][strlen(str)-1] = '\0';
             i++;
         }
         if (i < BLOCK_SIZE) { /* If we run out of lines to read, we've reached the end of file */
-            eof = 1;
+            *buffer->eof = 1;
         }
         pthread_mutex_unlock(&f_mutex); /* Unlock main file for reading */
         
+        cell->size = &i;
+        
         pthread_mutex_lock(&b_mutex);
-        while (buffer->num_cells == NUM_CELLS) {
-            err = pthread_cond_wait(&p_cond, b_mutex);
+        while ((*buffer->num_cells) == NUM_CELLS) {
+            err = pthread_cond_wait(&p_cond, &b_mutex);
             if (err != 0) {
                 perror("Impossible to create thread"); /* If can't create a thread, print an error */
                 exit(0);
             }
         }
-        buffer->buffer[buffer->w] = (cell *)malloc(sizeof(cell));
-        buffer->buffer[buffer->w]->block = block;
-        buffer->w = (buffer->w+1)%NUM_CELLS;
-        buffer->num_cells++;
+
+        buffer->buffer[(*buffer->w)] = cell;
+        *buffer->w = ((*buffer->w)+1)%NUM_CELLS;
+        *buffer->num_cells = (*buffer->num_cells) + 1;
         
         err = pthread_cond_signal(&c_cond);
         if (err != 0) {
@@ -264,45 +268,48 @@ void *producer_ini(void *arg) {
 /* Method that gets called when initializing a new thread, uses blocks of given size to read a filename1
  * @param *arg: struct thread_data
  */
-void *thread_ini(void *arg) {
-    thread_data *t_data = (thread_data *)arg; /* Struct with the information needed for the thread to read the file */
-    char str[FLIGHT_LINE_SIZE];
-    int i, j;
+void *consumer_ini(void *arg) {
+    consumer_data *c_data = (consumer_data *)arg; /* Struct with the information needed for the thread to read the file */
+    int i, err;
     
-            /* If file2 is empty, exit */
-    if (fgets(str, FLIGHT_LINE_SIZE, fp2) == NULL) {
-        perror("Flights file is empty");
-        return 0;
-    }
+    cell *cell;
+    buffer *buffer = c_data->buffer;
     
     /* While there's still lines to read, continue */
-    while(!eof) {
-        i = 0;
-        char **block = (char **)malloc(sizeof(char *)*BLOCK_SIZE); /* We allocate space for a block of a given size */
+    while(!(*buffer->eof) || (*buffer->num_cells) != 0) {
         
-        /* We lock the section for reading lines from the main file */
-        pthread_mutex_lock(&f_mutex);
-        /* We keep reading lines from the given file until reaching the block size limit or the end of file */
-        while (fgets(str, FLIGHT_LINE_SIZE, t_data->fp) != NULL && i < BLOCK_SIZE) { 
-            block[i] = (char *)malloc(sizeof(char)*strlen(str)); /* For each block line we allocate memory for the current line */
-            memcpy(block[i], str, strlen(str)-1); /* We copy the current line to the block */
-	        block[i][strlen(str)-1] = '\0';
-            i++;
+        pthread_mutex_lock(&b_mutex);
+        while ((*buffer->num_cells) == 0) {
+            err = pthread_cond_wait(&c_cond, &b_mutex);
+            if (err != 0) {
+                perror("Impossible to create thread"); /* If can't create a thread, print an error */
+                exit(0);
+            }
         }
-        if (i < BLOCK_SIZE) { /* If we run out of lines to read, we've reached the end of file */
-            eof = 1;
-        }
-        pthread_mutex_unlock(&f_mutex); /* Unlock main file for reading */
+        
+        cell = buffer->buffer[(*buffer->r)];
 
-        for (j = 0; j < i; j++) { /* For each block, add all read lines to the tree */
-            flight_list(t_data->tree, block[j]);
+        *buffer->r = ((*buffer->r)+1)%NUM_CELLS;
+        *buffer->num_cells = (*buffer->num_cells) - 1;
+        
+        err = pthread_cond_signal(&p_cond);
+        if (err != 0) {
+            perror("Impossible to create thread"); /* If can't create a thread, print an error */
+            exit(0);
         }
-
+        pthread_mutex_unlock(&b_mutex);
+        
+        for (i = 0; i < (*cell->size); i++) { /* For each block, add all read lines to the tree */
+            flight_list(c_data->tree, cell->block[i]);
+        }
+        
         /* Free block */
-        for (j = 0; j < i; j++) {
-            free(block[j]);
+        for (i = 0; i < (*cell->size); i++) {
+            free(cell->block[i]);
         }
-        free(block);
+        free(cell->block);
+        free(cell->size);
+        free(cell);
     }
     return NULL;
 }
@@ -332,30 +339,31 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
     fclose(fp1); /* With the rb-tree initialized, we don't need this file anymore */
     pthread_t producer;
     pthread_t consumers[NUM_CONSUMERS]; /* We create a list of threads to use */
-    char str[FLIGHT_LINE_SIZE];
     
-    int i, err, eof = 0;
+    int i, err;
     /* We allocate space for a thread_data struct */
     producer_data *p_data = (producer_data *)malloc(sizeof(producer_data)); 
     p_data->fp = fp2;
-    p_data->eof = &eof;
     p_data->buffer = (buffer *)malloc(sizeof(buffer));
     
-    p_data->buffer->buffer = (cell *)malloc(sizeof(cell)*NUM_CELLS);
+    *p_data->buffer->num_cells = 0;
+    *p_data->buffer->r = 0;
+    *p_data->buffer->w = 0;
+    *p_data->buffer->eof = 0;
     
-    err = pthread_create(&consumers, NULL, producer_ini, (void *)p_data);
+    err = pthread_create(&producer, NULL, producer_ini, (void *)p_data);
     if (err != 0) {
         perror("Impossible to create thread"); /* If can't create a thread, print an error */
         exit(0);
     }
     
-    consumer_data *c_data = (producer_data *)malloc(sizeof(consumer_data)); 
+    consumer_data *c_data = (consumer_data *)malloc(sizeof(consumer_data)); 
     c_data->tree = tree;
     c_data->buffer = p_data->buffer;
     
     /* We create the decided number of threads to use, with the start routine 'thread_ini' and the thread_data struct */
     for (i = 0; i < NUM_CONSUMERS; i++) {
-        err = pthread_create(&ntid[i], NULL, consumer_ini, (void *)c_data);
+        err = pthread_create(&consumers[i], NULL, consumer_ini, (void *)c_data);
         if (err != 0) {
             perror("Impossible to create thread"); /* If can't create a thread, print an error */
             exit(0);
@@ -375,11 +383,19 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
             exit(0);
         }
     }
-    eof = 0; /* We set the eof flag back to 0 */
 
     /* Close file 2, free the thread_data struct and return the tree */
     fclose(fp2);
-    free(t_data);
+    
+    free(p_data->buffer->buffer);
+    free(p_data->buffer->num_cells);
+    free(p_data->buffer->r);
+    free(p_data->buffer->w);
+    free(p_data->buffer->eof);
+    free(p_data->buffer);
+    
+    free(p_data);
+    free(c_data);
     return tree;
 }
 
