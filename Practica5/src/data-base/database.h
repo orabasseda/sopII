@@ -1,7 +1,6 @@
 #pragma once
 
 #include "arbre-binari/red-black-tree.h"
-#define NUM_CELLS 100
 
 /* Struct with the information needed for a thread
  */
