@@ -6,15 +6,15 @@
  */
 typedef struct cell_ {
     char **block;
-    int *size;
+    int size;
 } cell;
 
 typedef struct buffer_ {
     cell **buffer;
-    int *num_cells; //numero de cells amb read = 1
-    int *r;
-    int *w;
-    int *eof;
+    int num_cells; //numero de cells amb read = 1
+    int r;
+    int w;
+    int eof;
 } buffer;
 
 typedef struct producer_data_ {
