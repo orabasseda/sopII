@@ -15,10 +15,10 @@
 
 int max_dest = 0;
 char *airport;
-pthread_mutex_t f_mutex = PTHREAD_MUTEX_INITIALIZER; /* Static inizialization of mutex for airport file */
-pthread_mutex_t b_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t p_cond = PTHREAD_COND_INITIALIZER;
-pthread_cond_t c_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t f_mutex = PTHREAD_MUTEX_INITIALIZER; /* Static initialization of mutex for airport file */
+pthread_mutex_t b_mutex = PTHREAD_MUTEX_INITIALIZER; /* Static initialization of mutex for buffer */
+pthread_cond_t p_cond = PTHREAD_COND_INITIALIZER; /* Static initialization of condition variables for producer */
+pthread_cond_t c_cond = PTHREAD_COND_INITIALIZER; /* Static initialization of condition variables for consumers */
 
 /* Method that deletes a given rb_tree
  * @param *tree
@@ -224,7 +224,7 @@ void *producer_ini(void *arg) {
     /* While there's still lines to read, continue */
     while(!buffer_aux->eof) {
         i = 0;
-        cell_aux = malloc(sizeof(cell));
+        cell_aux = malloc(sizeof(cell)); /* We allocate space for a new cell */
         cell_aux->block = (char **)malloc(sizeof(char *)*BLOCK_SIZE); /* We allocate space for a block of a given size */
         
         /* We lock the section for reading lines from the main file */
@@ -233,40 +233,40 @@ void *producer_ini(void *arg) {
         while (i < BLOCK_SIZE && fgets(str, FLIGHT_LINE_SIZE, p_data->fp) != NULL) { 
             (cell_aux->block)[i] = (char *)malloc(sizeof(char)*strlen(str)); /* For each block line we allocate memory for the current line */
             memcpy((cell_aux->block)[i], str, strlen(str)-1); /* We copy the current line to the block */
-	    (cell_aux->block)[i][strlen(str)-1] = '\0';
+	        (cell_aux->block)[i][strlen(str)-1] = '\0';
             i++;
         }
         pthread_mutex_unlock(&f_mutex); /* Unlock main file for reading */
         
         cell_aux->size = i;
-        
+        /* We lock the section for operating with the buffer */
         pthread_mutex_lock(&b_mutex);
         if (i < BLOCK_SIZE || fgets(str, FLIGHT_LINE_SIZE, p_data->fp) == NULL) { /* If we run out of lines to read, we've reached the end of file */
             buffer_aux->eof = 1;
         }
         
-        if (i != 0) {
-	    while (buffer_aux->num_cells == NUM_CELLS) {
-		err = pthread_cond_wait(&p_cond, &b_mutex);
-		if (err != 0) {
-		    perror("Impossible to create thread"); /* If can't create a thread, print an error */
-		    exit(0);
-		}
-	    }
+        if (i != 0) { /* If the current cell isn't empty */
+	        while (buffer_aux->num_cells == NUM_CELLS) { /* While all cells are full, we wait */
+		       err = pthread_cond_wait(&p_cond, &b_mutex);
+		       if (err != 0) {
+		           perror("Impossible to create thread"); /* If can't create a thread, print an error */
+		           exit(0);
+		       }
+	        }
 
-	    buffer_aux->buffer[buffer_aux->w] = cell_aux;
-	    buffer_aux->w = (buffer_aux->w + 1)%NUM_CELLS;
-	    (buffer_aux->num_cells)++;
-	    err = pthread_cond_signal(&c_cond);
-	    if (err != 0) {
-		perror("Impossible to create thread"); /* If can't create a thread, print an error */
-		exit(0);
+	        buffer_aux->cell_vector[buffer_aux->w] = cell_aux; /* Allocate current cell to positionw in buffer*/
+	        buffer_aux->w = (buffer_aux->w + 1)%NUM_CELLS; /* Update w */
+	        (buffer_aux->num_cells)++; /* Increase number of cells readed */
+	        err = pthread_cond_signal(&c_cond); /* Unlock one of the threads in c_cond */
+	        if (err != 0) {
+		       perror("Impossible to create thread"); /* If can't create a thread, print an error */
+		       exit(0);
+	        }
 	    }
-	}
-        pthread_mutex_unlock(&b_mutex);
+        pthread_mutex_unlock(&b_mutex); /* Unlock buffer */
     }
     
-    err = pthread_cond_broadcast(&c_cond);
+    err = pthread_cond_broadcast(&c_cond); /* Unlock all threads in c_cond */
     if (err != 0) {
 	perror("Impossible to create thread"); /* If can't create a thread, print an error */
 	exit(0);
@@ -280,47 +280,46 @@ void *producer_ini(void *arg) {
 void *consumer_ini(void *arg) {
     consumer_data *c_data = (consumer_data *)arg; /* Struct with the information needed for the thread to read the file */
     int i, err;
-    
     cell *cell_aux;
     buffer *buffer_aux = c_data->buffer;
     
     /* While there's still lines to read, continue */
     while(!buffer_aux->eof || buffer_aux->num_cells != 0) {
-        pthread_mutex_lock(&b_mutex);
-        while (buffer_aux->num_cells == 0 && !buffer_aux->eof) {
+        pthread_mutex_lock(&b_mutex); /* We lock the section for operating with the buffer */
+        while (buffer_aux->num_cells == 0 && !buffer_aux->eof) { /* While all cells are empty and we still have lines to read, wait */
             err = pthread_cond_wait(&c_cond, &b_mutex);
             if (err != 0) {
                 perror("Impossible to create thread"); /* If can't create a thread, print an error */
                 exit(0);
             }
         }
-        
+        /* If there are cells to be read, grab cell from buffer */
         if (buffer_aux->num_cells != 0) {
-	    cell_aux = buffer_aux->buffer[buffer_aux->r];
-	    buffer_aux->r = (buffer_aux->r + 1)%NUM_CELLS;
-	    (buffer_aux->num_cells)--;
+	       cell_aux = buffer_aux->cell_vector[buffer_aux->r]; /* We grab the cell from buffer at position r*/
+	       buffer_aux->r = (buffer_aux->r + 1)%NUM_CELLS; /* Update r */
+	       (buffer_aux->num_cells)--; /* Update number of cells */
 	    
-	    err = pthread_cond_signal(&p_cond);
-	    if (err != 0) {
-		perror("Impossible to create thread"); /* If can't create a thread, print an error */
-		exit(0);
-	    }
-	    pthread_mutex_unlock(&b_mutex);
+	       err = pthread_cond_signal(&p_cond); /* Unlock producer thread */
+	       if (err != 0) {
+		      perror("Impossible to create thread"); /* If can't create a thread, print an error */
+		      exit(0);
+	       }
+	       pthread_mutex_unlock(&b_mutex); /* Unlock buffer */
 	    
-	    for (i = 0; i < cell_aux->size; i++) { /* For each block, add all read lines to the tree */
-		flight_list(c_data->tree, cell_aux->block[i]);
-	    }
+	       for (i = 0; i < cell_aux->size; i++) { /* For each block, add all read lines to the tree */
+		      flight_list(c_data->tree, cell_aux->block[i]);
+	       }
 	    
-	    /* Free block */
-	    for (i = 0; i < cell_aux->size; i++) {
-		free(cell_aux->block[i]);
-	    }
-	    free(cell_aux->block);
-	    free(cell_aux);
-	}
-	else {
-	    pthread_mutex_unlock(&b_mutex);
-	}
+	       /* Free block/cell */
+	       for (i = 0; i < cell_aux->size; i++) {
+		      free(cell_aux->block[i]);
+	       }
+	       free(cell_aux->block);
+	       free(cell_aux);
+
+	   } else { /* If there aren't cells to be read, unlock buffer */
+	       pthread_mutex_unlock(&b_mutex);
+	   }
     }
     return NULL;
 }
@@ -348,30 +347,31 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
 
     tree = airport_tree(fp1); /* Tree of the different airports */
     fclose(fp1); /* With the rb-tree initialized, we don't need this file anymore */
-    pthread_t producer;
+    pthread_t producer; /* We create the producer thread */
     pthread_t consumers[NUM_CONSUMERS]; /* We create a list of threads to use */
     
     int i, err;
     /* We allocate space for a thread_data struct */
     producer_data *p_data = (producer_data *)malloc(sizeof(producer_data)); 
     p_data->fp = fp2;
-    p_data->buffer = (buffer *)malloc(sizeof(buffer));
-    p_data->buffer->buffer = (cell **)malloc(sizeof(cell *)*NUM_CELLS);
-    
+    p_data->buffer = (buffer *)malloc(sizeof(buffer)); /* We allocate space for a buffer struct */
+    p_data->buffer->cell_vector = (cell **)malloc(sizeof(cell *)*NUM_CELLS); /* We alloca space for a cell vector inside buffer */
+    /* We initialize all variables to 0 */
     p_data->buffer->num_cells = 0;
     p_data->buffer->r = 0;
     p_data->buffer->w = 0;
     p_data->buffer->eof = 0;
-    
+
+    /* We create the producer thread, using the p_data struct as argument*/
     err = pthread_create(&producer, NULL, producer_ini, (void *)p_data);
     if (err != 0) {
         perror("Impossible to create thread"); /* If can't create a thread, print an error */
         exit(0);
     }
-    
+    /* We allocate space for a thread_data struct */
     consumer_data *c_data = (consumer_data *)malloc(sizeof(consumer_data)); 
     c_data->tree = tree;
-    c_data->buffer = p_data->buffer;
+    c_data->buffer = p_data->buffer; /* Both producer and consumers share the same buffer */
     
     /* We create the decided number of threads to use, with the start routine 'thread_ini' and the thread_data struct */
     for (i = 0; i < NUM_CONSUMERS; i++) {
@@ -381,13 +381,13 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
             exit(0);
         }
     }
-    
+    /* We wait for the producer thread to finish */
     err = pthread_join(producer, NULL);
     if (err != 0) {
         perror("Error in thread");
         exit(0);
     }
-    /* We wait for each thread to finish */
+    /* We wait for each consumer thread to finish */
     for (i = 0; i < NUM_CONSUMERS; i++) {
         err = pthread_join(consumers[i], NULL);
         if (err != 0) {
@@ -399,7 +399,7 @@ rb_tree *build_database(char *filename1, char *filename2, rb_tree *tree){
     /* Close file 2, free the thread_data struct and return the tree */
     fclose(fp2);
     
-    free(p_data->buffer->buffer);
+    free(p_data->buffer->cell_vector);
     free(p_data->buffer);
     
     free(p_data);

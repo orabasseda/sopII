@@ -5,26 +5,26 @@
 /* Struct with the information needed for a thread
  */
 typedef struct cell_ {
-    char **block;
-    int size;
+    char **block; /* Current block stored in cell */
+    int size; /* Size of the block */
 } cell;
 
 typedef struct buffer_ {
-    cell **buffer;
-    int num_cells; //numero de cells amb read = 1
-    int r;
-    int w;
-    int eof;
+    cell **buffer; /* Vector of cells */
+    int num_cells; /* Number of cells already occupied */
+    int r; /* Position to read from */
+    int w; /* Position to write to */
+    int eof; /* Indicates if we've reached the end of file */
 } buffer;
 
 typedef struct producer_data_ {
-    FILE *fp;
-    buffer *buffer;
+    FILE *fp; /* Pointer to a file */
+    buffer *buffer; /* Pointer to the cell buffer */
 } producer_data;
 
 typedef struct consumer_data_ {
-    rb_tree *tree;
-    buffer *buffer;
+    rb_tree *tree; /* Pointer to the tree */
+    buffer *buffer; /* Pointer to the cell buffer */
 } consumer_data;
 
 /**
