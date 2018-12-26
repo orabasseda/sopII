@@ -10,7 +10,7 @@ typedef struct cell_ {
 } cell;
 
 typedef struct buffer_ {
-    cell **buffer; /* Vector of cells */
+    cell **cell_vector; /* Vector of cells */
     int num_cells; /* Number of cells already occupied */
     int r; /* Position to read from */
     int w; /* Position to write to */
