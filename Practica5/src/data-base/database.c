@@ -241,7 +241,7 @@ void *producer_ini(void *arg) {
         cell_aux->size = i;
         /* We lock the section for operating with the buffer */
         pthread_mutex_lock(&b_mutex);
-        if (i < BLOCK_SIZE || fgets(str, FLIGHT_LINE_SIZE, p_data->fp) == NULL) { /* If we run out of lines to read, we've reached the end of file */
+        if (i < BLOCK_SIZE) { /* If we run out of lines to read, we've reached the end of file */
             buffer_aux->eof = 1;
         }
         
